@@ -30,4 +30,9 @@ if status is-interactive # Commands to run in interactive sessions can go here
     alias ff 'fastfetch'
     alias update 'bash ~/.config/scripts/sysmaintenance.sh'
     alias copy 'wl-copy <'
+    alias fixgpu 'killall -9 lmstudio'
 end
+
+# Added by LM Studio CLI (lms)
+set -gx PATH $PATH /home/stormy/.lmstudio/bin
+# End of LM Studio CLI section
