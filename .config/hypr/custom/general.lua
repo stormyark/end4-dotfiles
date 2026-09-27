@@ -19,37 +19,56 @@ hl.monitor({
 })
 
 -- GESTURES CONFIG:
--- 3 fingers: Workspace swipe
--- 4 fingers: Move and Fullscreen
-hl.gesture({
-    fingers = 4,
-    direction = "swipe",
-    action = "move"
-})
-hl.gesture({
-    fingers = 4,
-    direction = "pinch",
-    action = "fullscreen"
-})
-hl.gesture({
-    fingers = 3,
-    direction = "horizontal",
-    action = "workspace"
-})
-hl.gesture({
-    fingers = 3,
-    direction = "up",
-    action = function()
-        hl.dispatch(hl.dsp.global("quickshell:overviewWorkspacesToggle"))
-    end
-})
-hl.gesture({
-    fingers = 3,
-    direction = "down",
-    action = function()
-        hl.dispatch(hl.dsp.global("quickshell:overviewWorkspacesToggle"))
-    end
-})
+-- Unset default upstream gestures from hyprland/general.lua to prevent "overshadowed by previous gesture" conflicts:
+pcall(function() hl.gesture({ fingers = 3, direction = "swipe", action = "unset" }) end)
+pcall(function() hl.gesture({ fingers = 3, direction = "pinch", action = "unset" }) end)
+pcall(function() hl.gesture({ fingers = 4, direction = "horizontal", action = "unset" }) end)
+pcall(function() hl.gesture({ fingers = 4, direction = "up", action = "unset" }) end)
+pcall(function() hl.gesture({ fingers = 4, direction = "down", action = "unset" }) end)
+
+-- Custom gestures:
+-- 3 fingers: Workspace swipe and overview toggle
+pcall(function()
+    hl.gesture({
+        fingers = 3,
+        direction = "horizontal",
+        action = "workspace"
+    })
+end)
+pcall(function()
+    hl.gesture({
+        fingers = 3,
+        direction = "up",
+        action = function()
+            hl.dispatch(hl.dsp.global("quickshell:overviewWorkspacesToggle"))
+        end
+    })
+end)
+pcall(function()
+    hl.gesture({
+        fingers = 3,
+        direction = "down",
+        action = function()
+            hl.dispatch(hl.dsp.global("quickshell:overviewWorkspacesToggle"))
+        end
+    })
+end)
+
+-- 4 fingers: Move window and Fullscreen
+pcall(function()
+    hl.gesture({
+        fingers = 4,
+        direction = "swipe",
+        action = "move"
+    })
+end)
+pcall(function()
+    hl.gesture({
+        fingers = 4,
+        direction = "pinch",
+        action = "fullscreen"
+    })
+end)
 
 local homeDir = HOME or os.getenv("HOME") or ""
 local shaderPath = homeDir .. "/.config/hypr/shaders/vibrance.frag"
@@ -72,6 +91,10 @@ else
 end
 
 hl.config({
+    gestures = {
+        workspace_swipe = true,
+        workspace_swipe_fingers = 3,
+    },
     general = { gaps_in = 2 },
     decoration = decorationConfig,
     input = { kb_layout = "de" }
