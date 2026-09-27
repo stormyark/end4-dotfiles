@@ -31,6 +31,7 @@ UPDATE_UPSTREAM=0
 SKIP_PULL=0
 USE_COPY=0
 AUTO_YES=0
+CLEAN=0
 
 show_help() {
     cat <<EOF
@@ -41,16 +42,22 @@ Options:
                       Update upstream dots-hyprland (~/.cache/dots-hyprland)
                       via 'git stash && git pull && ./setup install' FIRST,
                       then restore custom modifications from GitHub.
+  -c, --clean, --fresh
+                      Force a clean reset to origin/$DEFAULT_BRANCH (discards local
+                      changes and untracked files, like a fresh clone).
   --no-pull           Skip git pull from GitHub (use local dotfiles repo as-is)
   --copy              Copy files instead of symlinking (stow/ln)
   -y, --yes           Assume yes for all prompts
   -h, --help          Show this help message
 
 Workflows:
-  1. Just restore custom mods (e.g. after running dots-hyprland setup install):
+  1. Just restore/update custom mods:
      $0
 
-  2. Full repair (dots-hyprland update + restore custom mods in one step):
+  2. Clean force reset (discards local changes, pulls latest from GitHub):
+     $0 --clean
+
+  3. Full repair (dots-hyprland update + restore custom mods in one step):
      $0 --full
 
 EOF
@@ -61,6 +68,7 @@ EOF
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -f|--full|-u|--update-upstream) UPDATE_UPSTREAM=1; shift;;
+        -c|--clean|--fresh) CLEAN=1; shift;;
         --no-pull) SKIP_PULL=1; shift;;
         --copy) USE_COPY=1; shift;;
         -y|--yes) AUTO_YES=1; shift;;
@@ -135,11 +143,19 @@ if (( SKIP_PULL == 0 )); then
             CURRENT_BRANCH="$DEFAULT_BRANCH"
         fi
 
-        echo -e "Pulling branch ${STY_CYAN}${CURRENT_BRANCH}${STY_RST} from origin..."
-        if git pull origin "$CURRENT_BRANCH"; then
-            echo -e "${STY_GREEN}Successfully updated repository from GitHub.${STY_RST}"
+        if (( CLEAN == 1 )); then
+            echo -e "${STY_YELLOW}Force-resetting repository to origin/${CURRENT_BRANCH}...${STY_RST}"
+            git fetch origin "$CURRENT_BRANCH"
+            git reset --hard "origin/$CURRENT_BRANCH"
+            git clean -fd
+            echo -e "${STY_GREEN}Repository hard-reset to latest origin/${CURRENT_BRANCH}.${STY_RST}"
         else
-            echo -e "${STY_YELLOW}Warning: git pull failed (network or conflict). Continuing with local files.${STY_RST}"
+            echo -e "Pulling branch ${STY_CYAN}${CURRENT_BRANCH}${STY_RST} from origin..."
+            if git pull origin "$CURRENT_BRANCH"; then
+                echo -e "${STY_GREEN}Successfully updated repository from GitHub.${STY_RST}"
+            else
+                echo -e "${STY_YELLOW}Warning: git pull failed (network or conflict). Continuing with local files.${STY_RST}"
+            fi
         fi
     else
         echo -e "${STY_YELLOW}$DOTFILES_DIR is not a git repository. Skipping git pull.${STY_RST}"

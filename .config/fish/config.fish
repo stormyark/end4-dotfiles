@@ -36,6 +36,7 @@ if status is-interactive
     alias ff 'fastfetch'
     alias update 'bash ~/.config/scripts/sysmaintenance.sh'
     alias restore-dots 'bash ~/.config/scripts/restore-dotfiles.sh'
+    alias clean-dots 'bash ~/.config/scripts/restore-dotfiles.sh --clean'
     alias update-dots 'bash ~/.config/scripts/restore-dotfiles.sh --full'
     alias updates-dots 'bash ~/.config/scripts/restore-dotfiles.sh --full'
     alias copy 'wl-copy <'
