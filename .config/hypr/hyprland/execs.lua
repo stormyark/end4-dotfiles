@@ -22,8 +22,4 @@ hl.on("hyprland.start", function ()
 
     -- Cursor
     hl.exec_cmd("hyprctl setcursor Bibata-Modern-Classic 24")
-
-    -- Autostart Applications
-    hl.exec_cmd("[workspace 1] kitty")
-    hl.exec_cmd("[workspace 2 silent] zen-browser")
 end)

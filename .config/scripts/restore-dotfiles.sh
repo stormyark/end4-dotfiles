@@ -249,6 +249,32 @@ else
     done
 fi
 
+# Post-deploy: Ensure shaders and clean upstream base configs
+if [[ -d "$DOTFILES_DIR/.config/hypr/shaders" ]]; then
+    mkdir -p "$HOME/.config/hypr/shaders"
+    cp -f "$DOTFILES_DIR/.config/hypr/shaders/"* "$HOME/.config/hypr/shaders/" 2>/dev/null || true
+fi
+
+# Clean legacy duplicate autostarts/overrides from ~/.config/hypr/hyprland/ if present
+for basefile in env.lua execs.lua general.lua variables.lua; do
+    target_base="$HOME/.config/hypr/hyprland/$basefile"
+    source_base="$DOTFILES_DIR/.config/hypr/hyprland/$basefile"
+    if [[ -f "$target_base" && -f "$source_base" ]]; then
+        if grep -q "Autostart Applications" "$target_base" 2>/dev/null || \
+           grep -q "screen_shader" "$target_base" 2>/dev/null || \
+           grep -q "XKB_DEFAULT_LAYOUT" "$target_base" 2>/dev/null; then
+            echo -e "${STY_YELLOW}Cleaning legacy overrides from ~/.config/hypr/hyprland/$basefile...${STY_RST}"
+            cp -f "$source_base" "$target_base"
+        fi
+    fi
+done
+
+# Ensure custom/keybinds.lua is copied if missing
+if [[ -f "$DOTFILES_DIR/.config/hypr/custom/keybinds.lua" && ! -f "$HOME/.config/hypr/custom/keybinds.lua" ]]; then
+    mkdir -p "$HOME/.config/hypr/custom"
+    cp -f "$DOTFILES_DIR/.config/hypr/custom/keybinds.lua" "$HOME/.config/hypr/custom/keybinds.lua"
+fi
+
 # 6. Step: Ensure executable permissions on scripts
 echo -e "\n${STY_BLUE}==> Setting executable permissions on scripts...${STY_RST}"
 chmod +x "$HOME/.config/scripts/"*.sh 2>/dev/null || true

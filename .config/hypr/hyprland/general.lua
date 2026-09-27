@@ -1,18 +1,10 @@
 -- MONITOR CONFIG
--- See https://wiki.hyprland.org/Configuring/Monitors/
 hl.monitor({
     output = "",
     mode = "preferred",
     position = "auto",
-    scale = "1"
+    scale = 1
 })
-
--- hl.monitor({
---     output = "",
---     mode = "3440x1440@100",
---     position = "3440x0",
---     scale = "1"
--- })
 
 hl.gesture({
     fingers = 3,
@@ -55,7 +47,7 @@ hl.config({
     },
     general = {
         -- Gaps and border
-        gaps_in = 2,
+        gaps_in = 4,
         gaps_out = 5,
         gaps_workspaces = 50,
 
@@ -110,12 +102,7 @@ hl.config({
         -- Dim
         dim_inactive = true,
         dim_strength = 0.05,
-        dim_special = 0.2,
-
-        active_opacity = 0.975,
-        inactive_opacity = 0.97,
-
-        screen_shader = "~/.config/hypr/shaders/vibrance.frag"
+        dim_special = 0.2
     },
     animations = {
         enabled = true
@@ -267,7 +254,7 @@ hl.animation({
 
 hl.config({
     input = {
-        kb_layout = "de",
+        kb_layout = "us",
         numlock_by_default = true,
         repeat_delay = 250,
         repeat_rate = 35,
