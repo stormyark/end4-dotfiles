@@ -3,13 +3,44 @@
 -- der Rest von general.lua bleibt bestehen), deshalb reichen die Keys, die
 -- tatsaechlich abweichen.
 
--- hl.monitor wird ein zweites Mal aufgerufen; fuer denselben output gewinnt
--- der spaetere Aufruf. https://wiki.hyprland.org/Configuring/Monitors/
+-- MONITOR CONFIG
+-- Auskommentiert auf Wunsch:
+-- hl.monitor({
+--     output = "",
+--     mode = "3440x1440@100",
+--     position = "3440x0",
+--     scale = 1
+-- })
+
 hl.monitor({
     output = "",
-    mode = "3440x1440@100",
-    position = "3440x0",
+    mode = "preferred",
+    position = "auto",
     scale = 1
+})
+
+-- GESTURES CONFIG:
+-- 3 Finger: Workspace-Swipe
+-- 4 Finger: Move und Fullscreen
+hl.gesture({
+    fingers = 3,
+    direction = "horizontal",
+    action = "workspace"
+})
+hl.gesture({
+    fingers = 3,
+    direction = "swipe",
+    action = "workspace"
+})
+hl.gesture({
+    fingers = 4,
+    direction = "swipe",
+    action = "move"
+})
+hl.gesture({
+    fingers = 4,
+    direction = "pinch",
+    action = "fullscreen"
 })
 
 local homeDir = HOME or os.getenv("HOME") or ""
@@ -33,6 +64,10 @@ else
 end
 
 hl.config({
+    gestures = {
+        workspace_swipe = true,
+        workspace_swipe_fingers = 3,
+    },
     general = { gaps_in = 2 },
     decoration = decorationConfig,
     input = { kb_layout = "de" }
