@@ -22,16 +22,6 @@ hl.monitor({
 -- 3 fingers: Workspace swipe
 -- 4 fingers: Move and Fullscreen
 hl.gesture({
-    fingers = 3,
-    direction = "horizontal",
-    action = "workspace"
-})
-hl.gesture({
-    fingers = 3,
-    direction = "swipe",
-    action = "workspace"
-})
-hl.gesture({
     fingers = 4,
     direction = "swipe",
     action = "move"
@@ -40,6 +30,25 @@ hl.gesture({
     fingers = 4,
     direction = "pinch",
     action = "fullscreen"
+})
+hl.gesture({
+    fingers = 3,
+    direction = "horizontal",
+    action = "workspace"
+})
+hl.gesture({
+    fingers = 3,
+    direction = "up",
+    action = function()
+        hl.dispatch(hl.dsp.global("quickshell:overviewWorkspacesToggle"))
+    end
+})
+hl.gesture({
+    fingers = 3,
+    direction = "down",
+    action = function()
+        hl.dispatch(hl.dsp.global("quickshell:overviewWorkspacesToggle"))
+    end
 })
 
 local homeDir = HOME or os.getenv("HOME") or ""
@@ -63,10 +72,6 @@ else
 end
 
 hl.config({
-    gestures = {
-        workspace_swipe = true,
-        workspace_swipe_fingers = 3,
-    },
     general = { gaps_in = 2 },
     decoration = decorationConfig,
     input = { kb_layout = "de" }
