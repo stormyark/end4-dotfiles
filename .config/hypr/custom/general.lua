@@ -91,10 +91,6 @@ else
 end
 
 hl.config({
-    gestures = {
-        workspace_swipe = true,
-        workspace_swipe_fingers = 3,
-    },
     general = { gaps_in = 2 },
     decoration = decorationConfig,
     input = { kb_layout = "de" }
