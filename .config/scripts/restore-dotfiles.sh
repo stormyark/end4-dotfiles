@@ -293,11 +293,9 @@ fi
 
 # 6. Step: Ensure executable permissions on scripts
 echo -e "\n${STY_BLUE}==> Setting executable permissions on scripts...${STY_RST}"
-chmod +x "$HOME/.config/scripts/"*.sh 2>/dev/null || true
-chmod +x "$HOME/.config/hypr/scripts/"*.sh 2>/dev/null || true
-if [[ -f "$DOTFILES_DIR/install.sh" ]]; then
-    chmod +x "$DOTFILES_DIR/install.sh" 2>/dev/null || true
-fi
+find "$HOME/.config/scripts" -type f -name "*.sh" -exec chmod +x {} + 2>/dev/null || true
+find "$HOME/.config/hypr" -type f -name "*.sh" -exec chmod +x {} + 2>/dev/null || true
+find "$DOTFILES_DIR" -type f -name "*.sh" -exec chmod +x {} + 2>/dev/null || true
 
 # 7. Step: Reload Hyprland if running
 if pgrep -x "Hyprland" &>/dev/null || command -v hyprctl &>/dev/null; then

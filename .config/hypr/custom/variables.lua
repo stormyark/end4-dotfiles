@@ -1,11 +1,14 @@
--- Only the two modified app lists. terminal, codeEditor, officeSoftware,
--- textEditor, volumeMixer, settingsApp, taskManager, and workspaceGroupSize
--- continue to be loaded from hyprland/variables.lua and remain up to date.
+-- Only modified application launcher variables.
+-- terminal, fileManager, and browser use absolute paths to ensure reliable launching.
 
--- Prefer nautilus over dolphin
-fileManager =
-"~/.config/hypr/hyprland/scripts/launch_first_available.sh 'nautilus' 'dolphin' 'nemo' 'thunar' 'kitty -1 fish -c yazi'"
+local homeDir = HOME or os.getenv("HOME") or ""
+local launcher = homeDir .. "/.config/hypr/hyprland/scripts/launch_first_available.sh"
 
--- Added helium-browser
-browser =
-"~/.config/hypr/hyprland/scripts/launch_first_available.sh 'google-chrome-stable' 'zen-browser' 'firefox' 'helium-browser' 'brave' 'chromium' 'microsoft-edge-stable' 'opera' 'librewolf'"
+-- Terminal (prefer kitty)
+terminal = launcher .. " 'kitty -1' 'foot' 'alacritty' 'wezterm' 'konsole' 'kgx' 'uxterm' 'xterm'"
+
+-- File manager (prefer nautilus)
+fileManager = launcher .. " 'nautilus' 'dolphin' 'nemo' 'thunar' 'kitty -1 fish -c yazi'"
+
+-- Browser (includes helium-browser)
+browser = launcher .. " 'google-chrome-stable' 'zen-browser' 'firefox' 'helium-browser' 'brave' 'chromium' 'microsoft-edge-stable' 'opera' 'librewolf'"
