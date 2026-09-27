@@ -1,23 +1,22 @@
--- Nur Abweichungen von hyprland/env.lua -- diese Datei wird ZUSAETZLICH geladen,
--- nicht statt des Originals. Alles was hier nicht steht, kommt weiter aus
--- hyprland/env.lua und bleibt damit automatisch aktuell.
+-- Only differences from hyprland/env.lua -- this file is loaded in ADDITION to,
+-- not instead of, the original. Anything not specified here continues to be loaded
+-- from hyprland/env.lua and remains automatically up to date.
 --
--- Hinweis: greift vermutlich nicht, weil hyprland/general.lua input.kb_layout
--- setzt und danach geladen wird. Wirksam ist der Eintrag in general.lua.
+-- Note: hyprland/general.lua sets input.kb_layout and is loaded afterwards.
 hl.env("XKB_DEFAULT_LAYOUT", "de")
 
 -- =============================================================================
--- Keybind-Override für dots-hyprland:
--- Da hl.bind additiv ist und es kein hl.unbind gibt, sind Keybinds nicht additiv.
--- Eine Umbelegung in custom/keybinds.lua würde sonst ZUSÄTZLICH zu hyprland/keybinds.lua
--- feuern (z.B. SUPER+C würde Fenster schließen UND Code-Editor starten).
+-- Keybind override for dots-hyprland:
+-- Because hl.bind is additive and there is no hl.unbind, keybinds are not additive.
+-- Any remapping in custom/keybinds.lua would otherwise fire IN ADDITION to
+-- hyprland/keybinds.lua (e.g. SUPER+C would close windows AND launch code editor).
 --
--- Die Lösung: custom/env.lua wird in hyprland.lua VOR hyprland/keybinds.lua geladen.
--- Wenn wir hier package.loaded["hyprland.keybinds"] = true setzen, überspringt
--- require("hyprland.keybinds") das Laden der Upstream-Keybinds komplett!
--- Anschließend lädt hyprland.lua sauber custom/keybinds.lua mit deinen persönlichen Keybinds.
--- Da ~/.config/hypr/custom/ von Upstream-Updates ('./setup install') NIE gelöscht wird,
--- funktionieren deine Keybinds dauerhaft, konfliktfrei und überstehen jedes Update!
+-- Solution: custom/env.lua is loaded in hyprland.lua BEFORE hyprland/keybinds.lua.
+-- Setting package.loaded["hyprland.keybinds"] = true tells Lua that the module
+-- is already loaded, skipping upstream keybinds completely.
+-- Afterwards, hyprland.lua cleanly loads custom/keybinds.lua with personal keybinds.
+-- Because ~/.config/hypr/custom/ is NEVER deleted or modified by upstream updates
+-- ('./setup install'), personal keybinds stay active, conflict-free, and persistent!
 -- =============================================================================
 if is_file_exists(HOME .. "/.config/hypr/custom/keybinds.lua") then
     package.loaded["hyprland.keybinds"] = true

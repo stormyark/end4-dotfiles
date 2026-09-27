@@ -302,7 +302,7 @@ hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true 
 hl.bind("SUPER + SHIFT + ALT + mouse:275", hl.dsp.exec_cmd("playerctl previous"))
 hl.bind("SUPER + SHIFT + ALT + mouse:276", hl.dsp.exec_cmd(mediaNextCommand))
 hl.bind("SUPER + SHIFT + B", hl.dsp.exec_cmd("playerctl previous"), { locked = true, description = "Misc: Previous track" })
--- SUPER+SHIFT+P ist auf hyprpicker umbelegt; Play/Pause via XF86AudioPlay / XF86AudioPause
+-- SUPER+SHIFT+P is remapped to hyprpicker; media play/pause is handled via XF86AudioPlay / XF86AudioPause
 --hl.bind("SUPER + SHIFT + P", hl.dsp.exec_cmd("playerctl play-pause"),
 --    { locked = true, description = "Misc: Play/pause media" })
 hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
@@ -321,7 +321,7 @@ hl.bind("SUPER + T", hl.dsp.exec_cmd(terminal))
 hl.bind("CTRL + ALT + T", hl.dsp.exec_cmd(terminal))
 hl.bind("SUPER + E", hl.dsp.exec_cmd(fileManager), { description = "App: File manager" })
 hl.bind("SUPER + W", hl.dsp.exec_cmd(browser), { description = "App: Browser" })
--- SUPER+C ist auf "Fenster schliessen" umbelegt, daher hier für Code-Editor deaktiviert:
+-- SUPER+C is remapped to close window, disabled here for code editor:
 --hl.bind("SUPER + C", hl.dsp.exec_cmd(codeEditor), { description = "App: Code editor" })
 hl.bind("CTRL + SUPER + SHIFT + ALT + W", hl.dsp.exec_cmd(officeSoftware), { description = "App: Office software" })
 hl.bind("SUPER + X", hl.dsp.exec_cmd(textEditor), { description = "App: Text editor" })

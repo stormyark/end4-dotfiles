@@ -1,10 +1,9 @@
--- Nur Abweichungen von hyprland/general.lua. hl.config fuehrt verschachtelte
--- Teil-Tabellen zusammen (Beleg: hyprland/colors.lua setzt nur general.col.*,
--- der Rest von general.lua bleibt bestehen), deshalb reichen die Keys, die
--- tatsaechlich abweichen.
+-- Only differences from hyprland/general.lua. hl.config merges nested tables
+-- (e.g. hyprland/colors.lua sets only general.col.*, preserving the rest of general.lua),
+-- so specifying only the modified keys is sufficient.
 
 -- MONITOR CONFIG
--- Auskommentiert auf Wunsch:
+-- Commented out by preference:
 -- hl.monitor({
 --     output = "",
 --     mode = "3440x1440@100",
@@ -20,8 +19,8 @@ hl.monitor({
 })
 
 -- GESTURES CONFIG:
--- 3 Finger: Workspace-Swipe
--- 4 Finger: Move und Fullscreen
+-- 3 fingers: Workspace swipe
+-- 4 fingers: Move and Fullscreen
 hl.gesture({
     fingers = 3,
     direction = "horizontal",
@@ -51,8 +50,8 @@ local decorationConfig = {
     inactive_opacity = 0.97,
 }
 
--- Hyprlands Shader-Parser akzeptiert keine Tilde '~', sondern benoetigt den absoluten Pfad.
--- Wir pruefen, ob die Shader-Datei existiert, bevor wir sie uebergeben.
+-- Hyprland's shader parser requires an absolute path rather than tilde '~'.
+-- Check if the shader file exists before applying.
 if is_file_exists and is_file_exists(shaderPath) then
     decorationConfig.screen_shader = shaderPath
 else
