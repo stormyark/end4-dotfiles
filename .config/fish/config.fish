@@ -34,11 +34,6 @@ if status is-interactive
     alias lst 'lsd -a --tree -I .git'
     alias llt 'lsd -ahl --tree -I .git'
     alias ff 'fastfetch'
-    alias update 'bash ~/.config/scripts/sysmaintenance.sh'
-    alias restore-dots 'bash ~/.config/scripts/restore-dotfiles.sh'
-    alias clean-dots 'bash ~/.config/scripts/restore-dotfiles.sh --clean'
-    alias update-dots 'bash ~/.config/scripts/restore-dotfiles.sh --full'
-    alias updates-dots 'bash ~/.config/scripts/restore-dotfiles.sh --full'
     alias copy 'wl-copy <'
     alias fixgpu 'killall -9 lmstudio'
 end
