@@ -2,6 +2,8 @@
 -- Custom Keybinds & Differences
 -- =============================================================================
 -- This file contains ONLY custom keybind overrides and additions.
+-- Matching upstream keys are automatically suppressed during initialization
+-- by custom/env.lua so that each key combination triggers exactly once.
 -- All ~350 default keybinds (workspaces, volume, brightness, screenshots,
 -- window management) are loaded automatically from hyprland/keybinds.lua.
 -- =============================================================================
@@ -12,27 +14,16 @@ if is_file_exists and is_file_exists(HOME .. "/.config/hypr/custom/variables.lua
     require("custom.variables")
 end
 
--- Helper to safely unbind a key (uses hl.unbind with fallback to hyprctl unbind)
-local function safe_unbind(key)
-    if hl and hl.unbind then
-        pcall(function() hl.unbind(key) end)
-    end
-    local mods, k = key:match("^(.-)%s*%+%s*([^%+]+)$")
-    if mods and k then
-        local hypr_mods = mods:gsub("%s*%+%s*", " ")
-        pcall(function() os.execute("hyprctl keyword unbind '" .. hypr_mods .. ", " .. k .. "' >/dev/null 2>&1") end)
-    end
+-- Restore raw hl.bind to register custom bindings cleanly
+if _G.__raw_hl_bind then
+    hl.bind = _G.__raw_hl_bind
 end
+hl.unbind = hl.unbind or function(key) end
 
--- 1. Unbind upstream defaults that we want to remap
-safe_unbind("SUPER + Q")         -- Default was: close window
-safe_unbind("SUPER + C")         -- Default was: code editor
-safe_unbind("SUPER + K")         -- Default was: on-screen keyboard
-safe_unbind("SUPER + Slash")     -- Default was: cheatsheet
-safe_unbind("SUPER + SHIFT + C") -- Default was: color picker
-safe_unbind("SUPER + SHIFT + P") -- Default was: media play/pause
-safe_unbind("SUPER + ALT + M")   -- Default was: mic mute
-safe_unbind("SUPER + R")         -- Unbind any previous mapping for R
+-- 1. Upstream keys that are moved or replaced (parsed by custom/env.lua)
+hl.unbind("SUPER + Slash")     -- Default cheatsheet moved to SUPER + K
+hl.unbind("SUPER + SHIFT + C") -- Default color picker moved to SUPER + SHIFT + P
+hl.unbind("SUPER + ALT + M")   -- Default mic mute moved to code:49
 
 -- 2. Windows & Application Launchers
 hl.bind("SUPER + C", hl.dsp.window.close(), { description = "Window: Close" })

@@ -37,17 +37,12 @@ However, **keybindings are NOT additive**:
 2. There is no `hl.unbind` in Hyprland's Lua API.
 3. If custom keybinds were loaded on top of upstream `hyprland/keybinds.lua`, multiple actions would trigger on the same key combo (e.g. `SUPER + C` would close windows AND launch the code editor).
 
-**The Solution:**
+**The Solution (Selective Keybind Interception):**
 - `~/.config/hypr/custom/env.lua` is loaded by `hyprland.lua` **before** `hyprland/keybinds.lua`.
-- In `custom/env.lua`, we set:
-  ```lua
-  if is_file_exists(HOME .. "/.config/hypr/custom/keybinds.lua") then
-      package.loaded["hyprland.keybinds"] = true
-  end
-  ```
-- Lua's `require("hyprland.keybinds")` sees `package.loaded` and **skips** loading upstream's default keybinds completely.
-- Hyprland then cleanly loads `custom/keybinds.lua` with your personal bindings!
-- Since `custom/` is never overwritten by upstream `./setup install`, your keybindings survive every update automatically and conflict-free!
+- In `custom/env.lua`, we wrap `hl.bind` to inspect keys being registered. Any key combination defined or unbound in `custom/keybinds.lua` is automatically suppressed while upstream `hyprland/keybinds.lua` runs.
+- All other ~350 default bindings (workspaces, volume, brightness, window tiling, screenshots) load normally.
+- When `custom/keybinds.lua` loads **after** `hyprland/keybinds.lua`, `hl.bind` is restored to register your custom bindings cleanly.
+- Result: No duplicate executions, no conflicts, all default bindings intact, and a slim ~35-line `custom/keybinds.lua` that survives all upstream updates!
 
 ---
 
