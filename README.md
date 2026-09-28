@@ -27,12 +27,20 @@ cd dotfiles
 
 ---
 
-## Keybinds & Custom Config
+## Keybinds & Custom Config Architecture
 
-In Hyprland, `hl.bind` is strictly additive (there is no `hl.unbind`). 
-- **Application shortcuts** (`SUPER + Return`, `SUPER + E`, `SUPER + W`) use the variables defined in `~/.config/hypr/custom/variables.lua`.
-- **New personal keybinds** (such as `SUPER + R` for `hyprvoice toggle`) are placed in `~/.config/hypr/custom/keybinds.lua`.
-- **Core keybind modifications** are versioned directly in `.config/hypr/hyprland/keybinds.lua` within this repository and symlinked via GNU Stow.
+### Why Keybinds are not additive and how we solved it
+In `dots-hyprland`, `~/.config/hypr/custom/` is **never** touched by upstream updates (`./setup install` uses `install_dir__ignore_existing` for `custom/`). Most settings (`env.lua`, `execs.lua`, `general.lua`, `variables.lua`) are additive or last-wins.
+
+However, **keybindings are NOT additive**:
+1. `hl.bind` only adds key dispatchers (there is no `hl.unbind` in Hyprland's Lua API).
+2. If custom keybinds were loaded on top of upstream `hyprland/keybinds.lua`, multiple actions would trigger on the same key combination (e.g. launching two file managers).
+
+**The Solution:**
+- `~/.config/hypr/custom/env.lua` is loaded by `hyprland.lua` **before** `hyprland/keybinds.lua`.
+- In `custom/env.lua`, setting `package.loaded["hyprland.keybinds"] = true` cleanly tells Lua that keybinds are already handled, skipping upstream defaults.
+- `~/.config/hypr/custom/keybinds.lua` loads the base keybinding suite and includes `~/.config/hypr/custom/personal_keybinds.lua`.
+- **`~/.config/hypr/custom/personal_keybinds.lua`**: Your clean, dedicated file containing ONLY your personal shortcuts and overrides. You can open and edit this file anytime to add or adjust your keybindings!
 
 ---
 

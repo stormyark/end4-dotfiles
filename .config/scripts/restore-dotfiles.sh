@@ -292,10 +292,14 @@ for basefile in env.lua execs.lua general.lua variables.lua; do
     fi
 done
 
-# Ensure custom/keybinds.lua is copied if missing
+# Ensure custom keybind files are copied if missing
 if [[ -f "$DOTFILES_DIR/.config/hypr/custom/keybinds.lua" && ! -f "$HOME/.config/hypr/custom/keybinds.lua" ]]; then
     mkdir -p "$HOME/.config/hypr/custom"
     cp -f "$DOTFILES_DIR/.config/hypr/custom/keybinds.lua" "$HOME/.config/hypr/custom/keybinds.lua"
+fi
+if [[ -f "$DOTFILES_DIR/.config/hypr/custom/personal_keybinds.lua" && ! -f "$HOME/.config/hypr/custom/personal_keybinds.lua" ]]; then
+    mkdir -p "$HOME/.config/hypr/custom"
+    cp -f "$DOTFILES_DIR/.config/hypr/custom/personal_keybinds.lua" "$HOME/.config/hypr/custom/personal_keybinds.lua"
 fi
 
 # 6. Step: Ensure executable permissions on scripts
