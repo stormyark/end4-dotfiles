@@ -30,9 +30,6 @@ hl.bind("SUPER + K", hl.dsp.global("quickshell:cheatsheetToggle"), { description
 -- Color picker (changed from SUPER+SHIFT+C to SUPER+SHIFT+P)
 hl.bind("SUPER + SHIFT + P", hl.dsp.exec_cmd("hyprpicker -a"), { description = "Utilities: Pick color #RRGGBB >> clipboard" })
 
--- Microphone mute toggle (German keyboard ^/° key)
-hl.bind("code:49", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_SOURCE@ toggle"), { locked = true, description = "Misc: Toggle mic" })
-
 -- Region screenshot (Screen snip)
 hl.bind("PRINT", hl.dsp.global("quickshell:regionScreenshot"), { description = "Utilities: Screen snip" })
 
