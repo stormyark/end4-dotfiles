@@ -265,6 +265,13 @@ else
     done
 fi
 
+# Clean root-level documentation symlinks that stow may have linked into $HOME
+for junk in upload.md useful.md; do
+    if [[ -L "$HOME/$junk" ]]; then
+        rm -f "$HOME/$junk"
+    fi
+done
+
 # Post-deploy: Ensure shaders and clean upstream base configs
 if [[ -d "$DOTFILES_DIR/.config/hypr/shaders" ]]; then
     mkdir -p "$HOME/.config/hypr/shaders"
@@ -300,7 +307,7 @@ find "$DOTFILES_DIR" -type f -name "*.sh" -exec chmod +x {} + 2>/dev/null || tru
 # 7. Step: Reload Hyprland if running
 if pgrep -x "Hyprland" &>/dev/null || command -v hyprctl &>/dev/null; then
     echo -e "\n${STY_BLUE}==> Reloading Hyprland configuration...${STY_RST}"
-    if hyprctl reload 2>/dev/null; then
+    if hyprctl reload &>/dev/null; then
         echo -e "${STY_GREEN}Hyprland reloaded successfully!${STY_RST}"
     else
         echo -e "${STY_YELLOW}Hyprland reload command dispatched.${STY_RST}"

@@ -20,8 +20,9 @@ _darcs
 
 ^/README.*
 ^/LICENSE.*
-^/COPYING
-
-pkglist.txt
-\.md
-install.sh
+^/COPYING.*
+^/pkglist\.txt$
+^/install\.sh$
+.*\.md$
+upload\.md
+useful\.md
