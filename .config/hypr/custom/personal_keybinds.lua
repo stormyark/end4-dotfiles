@@ -16,7 +16,7 @@ hl.bind("SUPER + C", hl.dsp.window.close(), { description = "Window: Close" })
 hl.bind("SUPER + Q", hl.dsp.exec_cmd(terminal), { description = "App: Terminal" })
 
 -- Hyprvoice toggle
-hl.bind("SUPER + R", hl.dsp.exec_cmd("hyprvoice toggle"), { description = "App: Toggle hyprvoice" })
+hl.bind("SUPER + SPACE", hl.dsp.exec_cmd("hyprvoice toggle"), { description = "App: Toggle hyprvoice" })
 
 -- Maximize window
 hl.bind("ALT + RETURN", hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }), { description = "Window: Maximize" })
