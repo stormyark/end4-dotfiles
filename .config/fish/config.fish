@@ -37,8 +37,9 @@ if status is-interactive
     alias update 'bash ~/.config/scripts/sysmaintenance.sh'
     alias restore-dots 'bash ~/.config/scripts/restore-dotfiles.sh'
     alias clean-dots 'bash ~/.config/scripts/restore-dotfiles.sh --clean'
-    alias update-dots 'bash ~/.config/scripts/restore-dotfiles.sh --full'
-    alias updates-dots 'bash ~/.config/scripts/restore-dotfiles.sh --full'
+    alias update-dots 'bash ~/.config/scripts/restore-dotfiles.sh'
+    alias updates-dots 'bash ~/.config/scripts/restore-dotfiles.sh'
+    alias quick-dots 'bash ~/.config/scripts/restore-dotfiles.sh --no-upstream'
     alias copy 'wl-copy <'
     alias fixgpu 'killall -9 lmstudio'
 end

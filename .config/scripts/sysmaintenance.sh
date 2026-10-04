@@ -264,9 +264,9 @@ if (( UPDATE_DOTFILES == 1 )); then
     echo -e "\n\033[1;34mRestoring custom dotfiles from GitHub...\033[0m"
     if [[ -n "$dots_script" && -f "$dots_script" ]]; then
         if (( FULL_DOTFILES_REPAIR == 1 )); then
-            bash "$dots_script" --full || echo -e "\033[1;33mDotfiles update failed (continuing).\033[0m"
+            bash "$dots_script" || echo -e "\033[1;33mDotfiles update failed (continuing).\033[0m"
         else
-            bash "$dots_script" || echo -e "\033[1;33mDotfiles restore failed (continuing).\033[0m"
+            bash "$dots_script" --no-upstream || echo -e "\033[1;33mDotfiles restore failed (continuing).\033[0m"
         fi
     else
         echo -e "\033[1;33mrestore-dotfiles.sh not found (checked script dir, ~/.config/scripts, ~/dotfiles).\033[0m"
@@ -277,9 +277,9 @@ elif (( AUTO_YES == 0 )) && [[ -t 0 ]]; then
         if [[ -n "$dots_script" && -f "$dots_script" ]]; then
             read -r -p $'\033[1;34mRun full repair? (Update dots-hyprland upstream first via setup install) [Y/n] \033[0m' full_resp
             if [[ "$full_resp" =~ ^[Nn]$ ]]; then
-                bash "$dots_script" || echo -e "\033[1;33mDotfiles restore failed (continuing).\033[0m"
+                bash "$dots_script" --no-upstream || echo -e "\033[1;33mDotfiles restore failed (continuing).\033[0m"
             else
-                bash "$dots_script" --full || echo -e "\033[1;33mDotfiles repair failed (continuing).\033[0m"
+                bash "$dots_script" || echo -e "\033[1;33mDotfiles repair failed (continuing).\033[0m"
                 FULL_DOTFILES_REPAIR=1
             fi
             UPDATE_DOTFILES=1

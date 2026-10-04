@@ -27,7 +27,7 @@ STY_RST="\033[0m"
 # Default settings
 REPO_URL="https://github.com/stormyark/end4-dotfiles.git"
 DEFAULT_BRANCH="master"
-UPDATE_UPSTREAM=0
+UPDATE_UPSTREAM=1
 SKIP_PULL=0
 USE_COPY=0
 AUTO_YES=0
@@ -38,10 +38,13 @@ show_help() {
 Usage: $0 [options]
 
 Options:
+  -q, --quick, --no-upstream, --skip-upstream
+                      Skip updating upstream dots-hyprland (~/.cache/dots-hyprland).
+                      Only restores/updates custom modifications from GitHub.
   -f, --full, -u, --update-upstream
                       Update upstream dots-hyprland (~/.cache/dots-hyprland)
                       via 'git stash && git pull && ./setup install' FIRST,
-                      then restore custom modifications from GitHub.
+                      then restore custom modifications from GitHub (enabled by default).
   -c, --clean, --fresh
                       Force a clean reset to origin/$DEFAULT_BRANCH (discards local
                       changes and untracked files, like a fresh clone).
@@ -51,14 +54,14 @@ Options:
   -h, --help          Show this help message
 
 Workflows:
-  1. Just restore/update custom mods:
+  1. Default update & restore (updates upstream dots-hyprland + applies custom mods):
      $0
 
-  2. Clean force reset (discards local changes, pulls latest from GitHub):
-     $0 --clean
+  2. Fast restore only (skip upstream dots-hyprland, just sync custom mods):
+     $0 --quick  (or $0 --no-upstream)
 
-  3. Full repair (dots-hyprland update + restore custom mods in one step):
-     $0 --full
+  3. Clean force reset (discards local changes, pulls latest from GitHub):
+     $0 --clean
 
 EOF
     exit 0
@@ -67,6 +70,7 @@ EOF
 # Parse options
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        -q|--quick|--no-upstream|--skip-upstream) UPDATE_UPSTREAM=0; shift;;
         -f|--full|-u|--update-upstream) UPDATE_UPSTREAM=1; shift;;
         -c|--clean|--fresh) CLEAN=1; shift;;
         --no-pull) SKIP_PULL=1; shift;;
@@ -107,25 +111,7 @@ fi
 
 echo -e "${STY_GREEN}Using dotfiles repository:${STY_RST} $DOTFILES_DIR"
 
-# 2. Step: Run Upstream Update First (if requested)
-if (( UPDATE_UPSTREAM == 1 )); then
-    UPSTREAM_DIR="$HOME/.cache/dots-hyprland"
-    echo -e "\n${STY_BLUE}==> Updating upstream dots-hyprland ($UPSTREAM_DIR)...${STY_RST}"
-    if [[ -d "$UPSTREAM_DIR" ]]; then
-        (
-            cd "$UPSTREAM_DIR"
-            echo -e "${STY_CYAN}Running: git stash && git pull && ./setup install${STY_RST}"
-            git stash || true
-            git pull || true
-            ./setup install
-        )
-        echo -e "${STY_GREEN}Upstream dots-hyprland update completed!${STY_RST}"
-    else
-        echo -e "${STY_RED}Upstream directory $UPSTREAM_DIR does not exist. Skipping upstream update.${STY_RST}"
-    fi
-fi
-
-# 3. Step: Pull latest modifications from GitHub
+# 2. Step: Pull latest modifications from GitHub
 if (( SKIP_PULL == 0 )); then
     echo -e "\n${STY_BLUE}==> Pulling latest modifications from GitHub...${STY_RST}"
     if git -C "$DOTFILES_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
@@ -176,8 +162,17 @@ if (( SKIP_PULL == 0 )); then
             elif (( AHEAD == 0 )); then
                 echo -e "Pulling ${STY_CYAN}${BEHIND}${STY_RST} new commit(s) from GitHub:"
                 git log --oneline "HEAD..origin/$CURRENT_BRANCH"
-                git merge --ff-only "origin/$CURRENT_BRANCH" >/dev/null
-                echo -e "${STY_GREEN}Updated ${LOCAL_REV} -> $(git rev-parse --short HEAD).${STY_RST}"
+                if git merge --ff-only "origin/$CURRENT_BRANCH" >/dev/null; then
+                    NEW_REV="$(git rev-parse --short HEAD)"
+                    echo -e "${STY_GREEN}Updated ${LOCAL_REV} -> ${NEW_REV}.${STY_RST}"
+
+                    # If this script was updated during merge, restart cleanly with updated version
+                    SCRIPT_REAL="$(realpath "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
+                    if git diff --name-only "$LOCAL_REV" "$NEW_REV" | grep -q "restore-dotfiles.sh"; then
+                        echo -e "${STY_CYAN}Script was updated from GitHub. Restarting with updated version...${STY_RST}\n"
+                        exec bash "$SCRIPT_REAL" "$@"
+                    fi
+                fi
             else
                 echo -e "${STY_RED}Local branch has ${AHEAD} commit(s) not on GitHub (behind by ${BEHIND}).${STY_RST}"
                 echo -e "${STY_RED}Not pulling automatically. Push them, or run with --clean to discard them.${STY_RST}"
@@ -188,6 +183,26 @@ if (( SKIP_PULL == 0 )); then
     fi
 else
     echo -e "\n${STY_YELLOW}==> Skipping git pull (--no-pull flag set).${STY_RST}"
+fi
+
+# 3. Step: Update Upstream dots-hyprland (enabled by default)
+if (( UPDATE_UPSTREAM == 1 )); then
+    UPSTREAM_DIR="$HOME/.cache/dots-hyprland"
+    echo -e "\n${STY_BLUE}==> Updating upstream dots-hyprland ($UPSTREAM_DIR)...${STY_RST}"
+    if [[ -d "$UPSTREAM_DIR" ]]; then
+        (
+            cd "$UPSTREAM_DIR"
+            echo -e "${STY_CYAN}Running in $UPSTREAM_DIR: git stash && git pull && ./setup install${STY_RST}"
+            git stash || true
+            git pull || true
+            ./setup install
+        )
+        echo -e "${STY_GREEN}Upstream dots-hyprland update completed!${STY_RST}"
+    else
+        echo -e "${STY_YELLOW}Upstream directory $UPSTREAM_DIR does not exist. Skipping upstream update.${STY_RST}"
+    fi
+else
+    echo -e "\n${STY_YELLOW}==> Skipping upstream update (--no-upstream / --quick flag set).${STY_RST}"
 fi
 
 # 4. Step: Backup clashing target files before restoring
