@@ -131,30 +131,56 @@ if (( SKIP_PULL == 0 )); then
     if git -C "$DOTFILES_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
         cd "$DOTFILES_DIR"
 
-        # Check for uncommitted local changes
-        if ! git diff-index --quiet HEAD -- 2>/dev/null; then
-            echo -e "${STY_YELLOW}Uncommitted changes detected in $DOTFILES_DIR.${STY_RST}"
-            echo -e "${STY_YELLOW}Stashing local modifications to prevent conflicts...${STY_RST}"
-            git stash push -m "Auto-stashed by restore-dotfiles $(date +%Y-%m-%d_%H-%M-%S)"
-        fi
-
         CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "$DEFAULT_BRANCH")"
         if [[ "$CURRENT_BRANCH" == "HEAD" || -z "$CURRENT_BRANCH" ]]; then
             CURRENT_BRANCH="$DEFAULT_BRANCH"
         fi
 
+        # Fetch first so local and remote state can be compared and reported
+        if ! git fetch origin "$CURRENT_BRANCH"; then
+            echo -e "${STY_YELLOW}Warning: git fetch failed (network?). Continuing with local files.${STY_RST}"
+        fi
+
+        LOCAL_REV="$(git rev-parse --short HEAD)"
+        REMOTE_REV="$(git rev-parse --short "origin/$CURRENT_BRANCH" 2>/dev/null || echo "unknown")"
+        echo -e "Local commit:  ${STY_CYAN}$(git log -1 --format='%h %s' HEAD)${STY_RST}"
+        echo -e "GitHub commit: ${STY_CYAN}$(git log -1 --format='%h %s' "origin/$CURRENT_BRANCH" 2>/dev/null || echo unknown)${STY_RST}"
+
+        # Uncommitted local changes (e.g. edits made through the ~/.config symlinks)
+        if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
+            if (( CLEAN == 1 )); then
+                echo -e "${STY_YELLOW}Discarding local modifications (--clean):${STY_RST}"
+                git status --short --untracked-files=no
+            else
+                STASH_MSG="Auto-stashed by restore-dotfiles $(date +%Y-%m-%d_%H-%M-%S)"
+                echo -e "${STY_YELLOW}Local modifications found in $DOTFILES_DIR:${STY_RST}"
+                git status --short --untracked-files=no
+                git stash push -m "$STASH_MSG" >/dev/null
+                echo -e "${STY_YELLOW}These changes were stashed and are NOT active anymore.${STY_RST}"
+                echo -e "${STY_YELLOW}Restore them with: git -C \"$DOTFILES_DIR\" stash pop${STY_RST}"
+            fi
+        fi
+
         if (( CLEAN == 1 )); then
             echo -e "${STY_YELLOW}Force-resetting repository to origin/${CURRENT_BRANCH}...${STY_RST}"
-            git fetch origin "$CURRENT_BRANCH"
             git reset --hard "origin/$CURRENT_BRANCH"
             git clean -fd
-            echo -e "${STY_GREEN}Repository hard-reset to latest origin/${CURRENT_BRANCH}.${STY_RST}"
+            echo -e "${STY_GREEN}Repository hard-reset to ${REMOTE_REV}.${STY_RST}"
+        elif [[ "$REMOTE_REV" == "unknown" ]]; then
+            echo -e "${STY_YELLOW}Remote branch unknown. Continuing with local files.${STY_RST}"
         else
-            echo -e "Pulling branch ${STY_CYAN}${CURRENT_BRANCH}${STY_RST} from origin..."
-            if git pull origin "$CURRENT_BRANCH"; then
-                echo -e "${STY_GREEN}Successfully updated repository from GitHub.${STY_RST}"
+            AHEAD="$(git rev-list --count "origin/$CURRENT_BRANCH..HEAD")"
+            BEHIND="$(git rev-list --count "HEAD..origin/$CURRENT_BRANCH")"
+            if (( BEHIND == 0 && AHEAD == 0 )); then
+                echo -e "${STY_GREEN}Already on the latest GitHub commit (${LOCAL_REV}). Nothing new to pull.${STY_RST}"
+            elif (( AHEAD == 0 )); then
+                echo -e "Pulling ${STY_CYAN}${BEHIND}${STY_RST} new commit(s) from GitHub:"
+                git log --oneline "HEAD..origin/$CURRENT_BRANCH"
+                git merge --ff-only "origin/$CURRENT_BRANCH" >/dev/null
+                echo -e "${STY_GREEN}Updated ${LOCAL_REV} -> $(git rev-parse --short HEAD).${STY_RST}"
             else
-                echo -e "${STY_YELLOW}Warning: git pull failed (network or conflict). Continuing with local files.${STY_RST}"
+                echo -e "${STY_RED}Local branch has ${AHEAD} commit(s) not on GitHub (behind by ${BEHIND}).${STY_RST}"
+                echo -e "${STY_RED}Not pulling automatically. Push them, or run with --clean to discard them.${STY_RST}"
             fi
         fi
     else
