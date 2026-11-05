@@ -59,25 +59,22 @@ bash ~/.config/scripts/sysmaintenance.sh
 ### 2. When Dotfiles Break (After System Updates)
 If a system upgrade breaks Hyprland or Quickshell components, update upstream dots-hyprland and restore your custom configuration:
 
-#### Option A: One-Step Full Repair (Recommended)
+#### Option A: One-Step Full Update & Restore (Default)
 Updates upstream dots-hyprland via `./setup install` AND pulls/restores your GitHub modifications in one command:
 ```bash
-update-dots
-# Or: bash ~/.config/scripts/restore-dotfiles.sh --full
-```
-
-#### Option B: Manual Upstream Update + Restore
-If you prefer running the official update manually:
-```bash
-# 1. Official upstream update:
-cd ~/.cache/dots-hyprland && git stash && git pull && ./setup install
-
-# 2. Restore custom dotfiles & pull latest GitHub mods:
 restore-dots
+# Or: update-dots
 # Or: bash ~/.config/scripts/restore-dotfiles.sh
 ```
 
-*(Note: Thanks to the `custom/` architecture, your custom settings in `~/.config/hypr/custom/` will even remain intact before step 2! Step 2 pulls any new changes from GitHub and ensures all shell aliases, scripts, and links are synchronized).*
+#### Option B: Quick Restore Only (Skip Upstream Update)
+If you only want to pull and link your custom modifications from GitHub without running upstream `dots-hyprland` setup:
+```bash
+quick-dots
+# Or: bash ~/.config/scripts/restore-dotfiles.sh --no-upstream
+```
+
+*(Note: Thanks to the `custom/` architecture, your custom settings in `~/.config/hypr/custom/` will even remain intact across upstream updates! Running `restore-dots` or `quick-dots` pulls any new changes from GitHub and ensures all shell aliases, scripts, and links are synchronized).*
 
 ---
 
@@ -85,6 +82,7 @@ restore-dots
 | Command | Action |
 |---|---|
 | `update` | Run system maintenance (`sysmaintenance.sh`) |
-| `restore-dots` | Pull latest mods from GitHub & restore configs |
-| `update-dots` | Full repair: update dots-hyprland upstream + restore mods |
+| `restore-dots` / `update-dots` | Full update: update `dots-hyprland` upstream + pull & restore custom mods |
+| `quick-dots` | Fast restore: pull & restore custom mods only (`--no-upstream`) |
+| `clean-dots` | Force clean reset of local dotfiles repo to GitHub `master` (`--clean`) |
 | `fixgpu` | Kill hung LM Studio process (`killall -9 lmstudio`) |

@@ -1,6 +1,8 @@
 # Restore / Repair Dotfiles (after pacman -Syu or dots update)
-restore-dots                     # Pull mods from GitHub & restore configs
-update-dots                      # Full repair: dots-hyprland setup install + restore mods
+restore-dots                     # Full repair (default): dots-hyprland setup install + pull & restore custom mods
+update-dots                      # Alias for restore-dots (full repair)
+quick-dots                       # Fast restore only: pull & restore custom mods (--no-upstream)
+clean-dots                       # Force clean reset to GitHub master (--clean)
 
 # Manual official dots-hyprland update + restore:
 # cd ~/.cache/dots-hyprland && git stash && git pull && ./setup install
