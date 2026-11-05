@@ -69,7 +69,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Write changes to a logfile
-log_dir="$HOME/.config/scripts/sysmaintenance_logs"
+log_dir="$HOME/.local/state/sysmaintenance_logs"
 mkdir -p "$log_dir"
 log_file="$log_dir/sysmaintenance_$CURRENT_DATE.log"
 exec > >(tee -a "$log_file") 2>&1
@@ -105,11 +105,14 @@ if [[ "$RUN_TIMESHIFT" -eq 1 ]]; then
 
     # Keep only the last 10 Timeshift backups
     echo -e "\033[1;34mPruning Timeshift backups to keep only the latest 10...\033[0m"
-    backup_count=$(sudo timeshift --list | grep -c '^Snapshot:' || echo 0)
+    mapfile -t all_snapshots < <(sudo timeshift --list 2>/dev/null | awk '/^[0-9]+[[:space:]]+>/{print $3}' || true)
+    backup_count=${#all_snapshots[@]}
     if (( backup_count > 10 )); then
-        # Get list of old snapshots (all but the 10 most recent)
-        old_snapshots=$(sudo timeshift --list | grep '^Snapshot:' | head -n -10 | awk '{print $2}')
-        for snap in $old_snapshots; do
+        # Delete oldest snapshots (keep the 10 most recent)
+        delete_count=$((backup_count - 10))
+        for (( i=0; i<delete_count; i++ )); do
+            snap="${all_snapshots[$i]}"
+            [[ -z "$snap" ]] && continue
             echo -e "\033[1;33mDeleting old snapshot: $snap\033[0m"
             sudo timeshift --delete --snapshot "$snap"
         done

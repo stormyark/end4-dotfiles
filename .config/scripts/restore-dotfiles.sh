@@ -68,6 +68,7 @@ EOF
 }
 
 # Parse options
+ORIG_ARGS=("$@")
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -q|--quick|--no-upstream|--skip-upstream) UPDATE_UPSTREAM=0; shift;;
@@ -86,8 +87,9 @@ echo -e "${STY_CYAN}==========================================${STY_RST}"
 echo -e "${STY_CYAN}  Custom Dotfiles Restore & Sync Tool     ${STY_RST}"
 echo -e "${STY_CYAN}==========================================${STY_RST}"
 
-# 1. Locate Dotfiles Repository
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# 1. Locate Dotfiles Repository (resolve symlinks first so ~/.config/scripts/restore-dotfiles.sh finds the repo)
+SCRIPT_REAL_INIT="$(realpath "${BASH_SOURCE[0]}" 2>/dev/null || readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_REAL_INIT")" && pwd)"
 DOTFILES_DIR=""
 
 # Check if script is inside a git repository
@@ -132,7 +134,13 @@ if (( SKIP_PULL == 0 )); then
         echo -e "Local commit:  ${STY_CYAN}$(git log -1 --format='%h %s' HEAD)${STY_RST}"
         echo -e "GitHub commit: ${STY_CYAN}$(git log -1 --format='%h %s' "origin/$CURRENT_BRANCH" 2>/dev/null || echo unknown)${STY_RST}"
 
-        # Uncommitted local changes (e.g. edits made through the ~/.config symlinks)
+        # Restore any tracked files that were accidentally deleted in the working tree
+        if [[ -n "$(git ls-files --deleted)" ]]; then
+            echo -e "${STY_YELLOW}Restoring missing tracked files in $DOTFILES_DIR...${STY_RST}"
+            git checkout HEAD -- $(git ls-files --deleted) 2>/dev/null || git checkout HEAD -- .
+        fi
+
+        # Uncommitted local modifications (only modified files, not deletions)
         if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
             if (( CLEAN == 1 )); then
                 echo -e "${STY_YELLOW}Discarding local modifications (--clean):${STY_RST}"
@@ -167,10 +175,10 @@ if (( SKIP_PULL == 0 )); then
                     echo -e "${STY_GREEN}Updated ${LOCAL_REV} -> ${NEW_REV}.${STY_RST}"
 
                     # If this script was updated during merge, restart cleanly with updated version
-                    SCRIPT_REAL="$(realpath "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
-                    if git diff --name-only "$LOCAL_REV" "$NEW_REV" | grep -q "restore-dotfiles.sh"; then
+                    SCRIPT_REAL="$DOTFILES_DIR/.config/scripts/restore-dotfiles.sh"
+                    if [[ -f "$SCRIPT_REAL" ]] && git diff --name-only "$LOCAL_REV" "$NEW_REV" | grep -q "restore-dotfiles.sh"; then
                         echo -e "${STY_CYAN}Script was updated from GitHub. Restarting with updated version...${STY_RST}\n"
-                        exec bash "$SCRIPT_REAL" "$@"
+                        exec bash "$SCRIPT_REAL" --no-pull "${ORIG_ARGS[@]}"
                     fi
                 fi
             else
@@ -185,6 +193,13 @@ else
     echo -e "\n${STY_YELLOW}==> Skipping git pull (--no-pull flag set).${STY_RST}"
 fi
 
+# Ensure all tracked files exist in DOTFILES_DIR before proceeding
+if git -C "$DOTFILES_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
+    if [[ -n "$(git -C "$DOTFILES_DIR" ls-files --deleted)" ]]; then
+        git -C "$DOTFILES_DIR" checkout HEAD -- . 2>/dev/null || true
+    fi
+fi
+
 # 3. Step: Update Upstream dots-hyprland (enabled by default)
 if (( UPDATE_UPSTREAM == 1 )); then
     UPSTREAM_DIR="$HOME/.cache/dots-hyprland"
@@ -197,6 +212,10 @@ if (( UPDATE_UPSTREAM == 1 )); then
             git pull || true
             ./setup install
         )
+        # In case './setup install' overwrote any tracked files through existing symlinks, restore DOTFILES_DIR
+        if git -C "$DOTFILES_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
+            git -C "$DOTFILES_DIR" checkout HEAD -- . 2>/dev/null || true
+        fi
         echo -e "${STY_GREEN}Upstream dots-hyprland update completed!${STY_RST}"
     else
         echo -e "${STY_YELLOW}Upstream directory $UPSTREAM_DIR does not exist. Skipping upstream update.${STY_RST}"
@@ -212,6 +231,8 @@ echo -e "\n${STY_BLUE}==> Preparing target files (Backup dir: $BACKUP_DIR)...${S
 # Files and directories to ignore when restoring to $HOME
 IGNORE_LIST=(
     ".git"
+    ".gitattributes"
+    ".gitignore"
     ".stow-local-ignore"
     "install.sh"
     "pkglist.txt"
@@ -233,8 +254,36 @@ is_ignored() {
     return 1
 }
 
-# Find all files in DOTFILES_DIR
-mapfile -t REPO_FILES < <(cd "$DOTFILES_DIR" && find . -mindepth 1 -type f)
+# Find all tracked files in DOTFILES_DIR (fallback to find if not a git repo)
+if git -C "$DOTFILES_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
+    mapfile -t REPO_FILES < <(git -C "$DOTFILES_DIR" ls-files)
+else
+    mapfile -t REPO_FILES < <(cd "$DOTFILES_DIR" && find . -mindepth 1 -type f)
+fi
+
+DOTFILES_REAL="$(realpath "$DOTFILES_DIR" 2>/dev/null || echo "$DOTFILES_DIR")"
+
+# Unfold any directory symlinks in $HOME that point inside DOTFILES_DIR (created by older stow runs without --no-folding)
+# CRITICAL: Removing a folded directory symlink (rm "$dir") prevents 'rm -f "$target"' from deleting files inside DOTFILES_DIR!
+for f in "${REPO_FILES[@]}"; do
+    rel="${f#./}"
+    if is_ignored "$rel"; then
+        continue
+    fi
+    parent_rel="$(dirname "$rel")"
+    while [[ "$parent_rel" != "." && "$parent_rel" != "/" ]]; do
+        target_dir="$HOME/$parent_rel"
+        if [[ -L "$target_dir" ]]; then
+            dir_real="$(realpath "$target_dir" 2>/dev/null || true)"
+            if [[ -n "$dir_real" && "$dir_real" == "$DOTFILES_REAL"* ]]; then
+                echo -e "${STY_CYAN}Unfolding directory symlink: $target_dir${STY_RST}"
+                rm "$target_dir"
+                mkdir -p "$target_dir"
+            fi
+        fi
+        parent_rel="$(dirname "$parent_rel")"
+    done
+done
 
 backed_up_count=0
 for f in "${REPO_FILES[@]}"; do
@@ -244,10 +293,13 @@ for f in "${REPO_FILES[@]}"; do
     fi
 
     target="$HOME/$rel"
-    # If target exists and is a regular file or broken symlink
+    # If target exists and is a regular file or symlink
     if [[ -e "$target" || -L "$target" ]]; then
-        # Check if already points to our dotfile
-        if [[ -L "$target" ]] && [[ "$(realpath "$target" 2>/dev/null || true)" == "$(realpath "$DOTFILES_DIR/$rel" 2>/dev/null || true)" ]]; then
+        # CRITICAL: Check realpath regardless of whether $target itself or a parent dir is a symlink!
+        # Never delete $target if it resolves to the file inside $DOTFILES_DIR!
+        target_real="$(realpath "$target" 2>/dev/null || true)"
+        source_real="$(realpath "$DOTFILES_DIR/$rel" 2>/dev/null || true)"
+        if [[ -n "$target_real" && -n "$source_real" && "$target_real" == "$source_real" ]]; then
             continue
         fi
 
@@ -282,8 +334,8 @@ if (( USE_COPY == 1 )); then
         echo "  Copied: $rel"
     done
 elif command -v stow &>/dev/null; then
-    echo -e "${STY_CYAN}Using GNU Stow to link dotfiles...${STY_RST}"
-    if ! ( cd "$DOTFILES_DIR" && stow -v -R -d "$DOTFILES_DIR" -t "$HOME" . ); then
+    echo -e "${STY_CYAN}Using GNU Stow (--no-folding) to link dotfiles...${STY_RST}"
+    if ! ( cd "$DOTFILES_DIR" && stow --no-folding -v -R -d "$DOTFILES_DIR" -t "$HOME" . ); then
         echo -e "${STY_YELLOW}GNU Stow encountered an issue. Falling back to direct symlinks (ln -sfn)...${STY_RST}"
         for f in "${REPO_FILES[@]}"; do
             rel="${f#./}"
@@ -316,7 +368,13 @@ done
 # Post-deploy: Ensure shaders and clean upstream base configs
 if [[ -d "$DOTFILES_DIR/.config/hypr/shaders" ]]; then
     mkdir -p "$HOME/.config/hypr/shaders"
-    cp -f "$DOTFILES_DIR/.config/hypr/shaders/"* "$HOME/.config/hypr/shaders/" 2>/dev/null || true
+    for shader in "$DOTFILES_DIR/.config/hypr/shaders/"*; do
+        [[ -f "$shader" ]] || continue
+        target_shader="$HOME/.config/hypr/shaders/$(basename "$shader")"
+        if [[ "$(realpath "$shader" 2>/dev/null || true)" != "$(realpath "$target_shader" 2>/dev/null || true)" ]]; then
+            cp -f "$shader" "$target_shader" 2>/dev/null || true
+        fi
+    done
 fi
 
 # Clean legacy duplicate autostarts/overrides from ~/.config/hypr/hyprland/ if present
@@ -324,11 +382,13 @@ for basefile in env.lua execs.lua general.lua variables.lua; do
     target_base="$HOME/.config/hypr/hyprland/$basefile"
     source_base="$DOTFILES_DIR/.config/hypr/hyprland/$basefile"
     if [[ -f "$target_base" && -f "$source_base" ]]; then
-        if grep -q "Autostart Applications" "$target_base" 2>/dev/null || \
-           grep -q "screen_shader" "$target_base" 2>/dev/null || \
-           grep -q "XKB_DEFAULT_LAYOUT" "$target_base" 2>/dev/null; then
-            echo -e "${STY_YELLOW}Cleaning legacy overrides from ~/.config/hypr/hyprland/$basefile...${STY_RST}"
-            cp -f "$source_base" "$target_base"
+        if [[ "$(realpath "$target_base" 2>/dev/null || true)" != "$(realpath "$source_base" 2>/dev/null || true)" ]]; then
+            if grep -q "Autostart Applications" "$target_base" 2>/dev/null || \
+               grep -q "screen_shader" "$target_base" 2>/dev/null || \
+               grep -q "XKB_DEFAULT_LAYOUT" "$target_base" 2>/dev/null; then
+                echo -e "${STY_YELLOW}Cleaning legacy overrides from ~/.config/hypr/hyprland/$basefile...${STY_RST}"
+                cp -f "$source_base" "$target_base"
+            fi
         fi
     fi
 done
