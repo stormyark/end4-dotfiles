@@ -141,20 +141,21 @@ if (( SKIP_PULL == 0 )); then
         fi
 
         # Uncommitted local modifications (only modified files, not deletions)
+        STASHED=0
         if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
             if (( CLEAN == 1 )); then
                 echo -e "${STY_YELLOW}Discarding local modifications (--clean):${STY_RST}"
                 git status --short --untracked-files=no
             else
                 STASH_MSG="Auto-stashed by restore-dotfiles $(date +%Y-%m-%d_%H-%M-%S)"
-                echo -e "${STY_YELLOW}Local modifications found in $DOTFILES_DIR:${STY_RST}"
+                echo -e "${STY_YELLOW}Local modifications found in $DOTFILES_DIR (stashing before pull):${STY_RST}"
                 git status --short --untracked-files=no
                 git stash push -m "$STASH_MSG" >/dev/null
-                echo -e "${STY_YELLOW}These changes were stashed and are NOT active anymore.${STY_RST}"
-                echo -e "${STY_YELLOW}Restore them with: git -C \"$DOTFILES_DIR\" stash pop${STY_RST}"
+                STASHED=1
             fi
         fi
 
+        RESTART_NEEDED=0
         if (( CLEAN == 1 )); then
             echo -e "${STY_YELLOW}Force-resetting repository to origin/${CURRENT_BRANCH}...${STY_RST}"
             git reset --hard "origin/$CURRENT_BRANCH"
@@ -174,16 +175,33 @@ if (( SKIP_PULL == 0 )); then
                     NEW_REV="$(git rev-parse --short HEAD)"
                     echo -e "${STY_GREEN}Updated ${LOCAL_REV} -> ${NEW_REV}.${STY_RST}"
 
-                    # If this script was updated during merge, restart cleanly with updated version
-                    SCRIPT_REAL="$DOTFILES_DIR/.config/scripts/restore-dotfiles.sh"
-                    if [[ -f "$SCRIPT_REAL" ]] && git diff --name-only "$LOCAL_REV" "$NEW_REV" | grep -q "restore-dotfiles.sh"; then
-                        echo -e "${STY_CYAN}Script was updated from GitHub. Restarting with updated version...${STY_RST}\n"
-                        exec bash "$SCRIPT_REAL" --no-pull "${ORIG_ARGS[@]}"
+                    if git diff --name-only "$LOCAL_REV" "$NEW_REV" | grep -q "restore-dotfiles.sh"; then
+                        RESTART_NEEDED=1
                     fi
                 fi
             else
                 echo -e "${STY_RED}Local branch has ${AHEAD} commit(s) not on GitHub (behind by ${BEHIND}).${STY_RST}"
                 echo -e "${STY_RED}Not pulling automatically. Push them, or run with --clean to discard them.${STY_RST}"
+            fi
+        fi
+
+        if (( STASHED == 1 && CLEAN == 0 )); then
+            if git stash pop --quiet 2>/dev/null; then
+                echo -e "${STY_GREEN}Re-applied your local uncommitted modifications on top of latest commit.${STY_RST}"
+            else
+                git checkout --theirs . 2>/dev/null || true
+                git reset HEAD --quiet 2>/dev/null || true
+                git checkout HEAD -- . 2>/dev/null || true
+                echo -e "${STY_YELLOW}Local modifications conflicted with GitHub changes and remain safely in git stash.${STY_RST}"
+                echo -e "${STY_YELLOW}Inspect or restore them with: git -C \"$DOTFILES_DIR\" stash pop${STY_RST}"
+            fi
+        fi
+
+        if (( RESTART_NEEDED == 1 )); then
+            SCRIPT_REAL="$DOTFILES_DIR/.config/scripts/restore-dotfiles.sh"
+            if [[ -f "$SCRIPT_REAL" ]]; then
+                echo -e "${STY_CYAN}Script was updated from GitHub. Restarting with updated version...${STY_RST}\n"
+                exec bash "$SCRIPT_REAL" --no-pull "${ORIG_ARGS[@]}"
             fi
         fi
     else
