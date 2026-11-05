@@ -229,11 +229,14 @@ BACKUP_DIR="$HOME/.cache/dotfiles_backup/$(date +%Y%m%d_%H%M%S)"
 echo -e "\n${STY_BLUE}==> Preparing target files (Backup dir: $BACKUP_DIR)...${STY_RST}"
 
 # Files and directories to ignore when restoring to $HOME
+# Note: .config/hypr/hyprland is managed by upstream dots-hyprland and Quickshell at runtime
+# (e.g. colors.lua, shellOverrides/main.lua) and must NOT be symlinked into the git repo.
 IGNORE_LIST=(
     ".git"
     ".gitattributes"
     ".gitignore"
     ".stow-local-ignore"
+    ".config/hypr/hyprland"
     "install.sh"
     "pkglist.txt"
     "README.md"
@@ -377,18 +380,46 @@ if [[ -d "$DOTFILES_DIR/.config/hypr/shaders" ]]; then
     done
 fi
 
+# Post-deploy: Ensure ~/.config/hypr/hyprland contains real upstream files (not symlinks into DOTFILES_DIR)
+# This prevents Quickshell runtime writes (colors.lua, shellOverrides) from dirtying the git repo
+# and preserves upstream updates from ~/.cache/dots-hyprland.
+if [[ -d "$DOTFILES_DIR/.config/hypr/hyprland" ]]; then
+    if [[ -L "$HOME/.config/hypr/hyprland" ]]; then
+        rm "$HOME/.config/hypr/hyprland"
+        mkdir -p "$HOME/.config/hypr/hyprland"
+    fi
+    UPSTREAM_HYPRLAND_DIR="$HOME/.cache/dots-hyprland/dots/.config/hypr/hyprland"
+    while IFS= read -r -d '' src_file; do
+        rel_hypr="${src_file#"$DOTFILES_DIR/.config/hypr/hyprland/"}"
+        target_hypr="$HOME/.config/hypr/hyprland/$rel_hypr"
+        target_hypr_dir="$(dirname "$target_hypr")"
+        if [[ -L "$target_hypr_dir" ]]; then
+            rm "$target_hypr_dir"
+        fi
+        mkdir -p "$target_hypr_dir"
+
+        # If target_hypr is a symlink (from old stow runs) or missing, materialize it as a regular file
+        if [[ -L "$target_hypr" || ! -e "$target_hypr" ]]; then
+            rm -f "$target_hypr"
+            if [[ -f "$UPSTREAM_HYPRLAND_DIR/$rel_hypr" ]]; then
+                cp -f "$UPSTREAM_HYPRLAND_DIR/$rel_hypr" "$target_hypr"
+            else
+                cp -f "$src_file" "$target_hypr"
+            fi
+        fi
+    done < <(find "$DOTFILES_DIR/.config/hypr/hyprland" -type f -print0)
+fi
+
 # Clean legacy duplicate autostarts/overrides from ~/.config/hypr/hyprland/ if present
 for basefile in env.lua execs.lua general.lua variables.lua; do
     target_base="$HOME/.config/hypr/hyprland/$basefile"
     source_base="$DOTFILES_DIR/.config/hypr/hyprland/$basefile"
-    if [[ -f "$target_base" && -f "$source_base" ]]; then
-        if [[ "$(realpath "$target_base" 2>/dev/null || true)" != "$(realpath "$source_base" 2>/dev/null || true)" ]]; then
-            if grep -q "Autostart Applications" "$target_base" 2>/dev/null || \
-               grep -q "screen_shader" "$target_base" 2>/dev/null || \
-               grep -q "XKB_DEFAULT_LAYOUT" "$target_base" 2>/dev/null; then
-                echo -e "${STY_YELLOW}Cleaning legacy overrides from ~/.config/hypr/hyprland/$basefile...${STY_RST}"
-                cp -f "$source_base" "$target_base"
-            fi
+    if [[ -f "$target_base" && -f "$source_base" && ! -L "$target_base" ]]; then
+        if grep -q "Autostart Applications" "$target_base" 2>/dev/null || \
+           grep -q "screen_shader" "$target_base" 2>/dev/null || \
+           grep -q "XKB_DEFAULT_LAYOUT" "$target_base" 2>/dev/null; then
+            echo -e "${STY_YELLOW}Cleaning legacy overrides from ~/.config/hypr/hyprland/$basefile...${STY_RST}"
+            cp -f "$source_base" "$target_base"
         fi
     fi
 done

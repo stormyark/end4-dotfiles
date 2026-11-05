@@ -24,6 +24,7 @@ _darcs
 ^/COPYING.*
 ^/pkglist\.txt$
 ^/install\.sh$
+^/\.config/hypr/hyprland$
 .*\.md$
 upload\.md
 useful\.md
