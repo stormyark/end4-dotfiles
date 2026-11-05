@@ -76,6 +76,9 @@ local shaderPath = homeDir .. "/.config/hypr/shaders/vibrance.frag"
 local decorationConfig = {
     active_opacity = 0.975,
     inactive_opacity = 0.97,
+    blur = {
+        size = 2,
+    },
 }
 
 -- Hyprland's shader parser requires an absolute path rather than tilde '~'.
