@@ -79,6 +79,9 @@ local decorationConfig = {
     blur = {
         size = 2,
     },
+    shadow = {
+        render_power = 4,
+    },
 }
 
 -- Hyprland's shader parser requires an absolute path rather than tilde '~'.

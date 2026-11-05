@@ -1,5 +1,9 @@
 # Commands to run in interactive sessions can go here
 if status is-interactive
+    # Fix for vendor fish-pure-prompt fish_title when using starship
+    set -g pure_shorten_window_title_current_directory_length 0
+    set -g pure_shorten_prompt_current_directory_length 0
+
     # No greeting
     set fish_greeting
 
