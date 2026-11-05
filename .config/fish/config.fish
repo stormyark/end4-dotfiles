@@ -49,5 +49,5 @@ if status is-interactive
 end
 
 # Added by LM Studio CLI (lms)
-set -gx PATH $PATH /home/stormy/.lmstudio/bin
+fish_add_path -g "$HOME/.lmstudio/bin"
 # End of LM Studio CLI section
