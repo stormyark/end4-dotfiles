@@ -300,27 +300,13 @@ elif (( AUTO_YES == 0 )) && [[ -t 0 ]]; then
     fi
 fi
 
-# Reboot is now skipped by default to avoid intervention
+# Reboot is skipped by default to avoid unexpected restarts
 reboot_wanted=0
-if (( NO_REBOOT == 1 )); then
-    echo -e "\033[1;33mReboot suppressed by option.\033[0m"
-elif (( AUTO_YES == 1 )); then
-    reboot_wanted=1
-fi
-if (( reboot_wanted == 1 )); then
-    echo -e "\033[1;32mRebooting now...\033[0m"
-    sudo reboot
-else
-    echo -e "\033[1;31mReboot skipped; please reboot later if needed.\033[0m"
-    if command -v notify-send &> /dev/null; then
-        notify-send "System maintenance completed — reboot recommended."
-    fi
-fi
 
 # --- Summary ---
 echo -e "\n\033[1;36m--- Maintenance Summary ---\033[0m"
 echo "Timeshift backup: $([[ $RUN_TIMESHIFT -eq 1 ]] && echo Executed || echo Skipped)"
-echo "System updated: Yes"
+echo "System updated: $([[ $pacman_ok -eq 1 ]] && echo Yes || echo "Partial/Failed")"
 echo "Pacman cache kept last: $KEEP_PACCACHE"
 echo "Orphans removed: $([[ ${#orphans[@]} -gt 0 && -n "${orphans[0]}" ]] && echo Yes || echo No)"
 echo "AUR updated: $([[ $aur_update_choice -eq 1 ]] && echo Yes || echo No)"
@@ -334,6 +320,20 @@ echo -e "\033[0m"
 
 # Small delay to allow 'tee' command to finish writing to the logfile
 sleep 0.2
+
+if (( reboot_wanted == 1 )); then
+    echo -e "\033[1;32mRebooting now...\033[0m"
+    sudo reboot
+else
+    if (( NO_REBOOT == 1 )); then
+        echo -e "\033[1;33mReboot suppressed by option.\033[0m"
+    else
+        echo -e "\033[1;31mReboot skipped; please reboot later if needed.\033[0m"
+    fi
+    if command -v notify-send &> /dev/null; then
+        notify-send "System maintenance completed — reboot recommended."
+    fi
+fi
 
 : '
 # --- Systemd Timer/Service Example ---
