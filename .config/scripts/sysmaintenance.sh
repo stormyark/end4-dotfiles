@@ -85,7 +85,7 @@ if [[ "$RUN_TIMESHIFT" -eq 1 ]]; then
         read -r -p $'\033[1;34mTimeshift is not installed. Would you like to install it now? [Y/n] \033[0m' install_response
         if [[ "$install_response" =~ ^[Yy]$ || -z "$install_response" ]]; then
             echo -e "\033[1;34mInstalling timeshift...\033[0m"
-            sudo pacman -Sy --noconfirm timeshift || {
+            sudo pacman -S --noconfirm timeshift || {
                 echo -e "\033[1;31mTimeshift installation failed. Script aborted.\033[0m"
                 exit 1
             }
@@ -155,12 +155,15 @@ if (( mirrorlist_update_choice == 1 )) && command -v reflector &> /dev/null; the
     pacman_args="-Syyu"
 fi
 
+pacman_ok=1
 if command -v stdbuf &> /dev/null; then
     stdbuf -oL sudo pacman "$pacman_args" --noconfirm || {
+        pacman_ok=0
         echo -e "\033[1;33mpacman returned non-zero (continuing).\033[0m"
     }
 else
     sudo pacman "$pacman_args" --noconfirm || {
+        pacman_ok=0
         echo -e "\033[1;33mpacman returned non-zero (continuing).\033[0m"
     }
 fi
@@ -173,7 +176,7 @@ cache_before=$(sudo du -sh /var/cache/pacman/pkg/ 2>/dev/null | awk '{print $1}'
 [[ -z "$cache_before" ]] && cache_before="0"
 if ! command -v paccache &> /dev/null; then
     echo -e "\033[1;33mpaccache not available; installing pacman-contrib...\033[0m"
-    sudo pacman -Sy --noconfirm pacman-contrib || echo -e "\033[1;33mCould not install pacman-contrib, skipping cache cleanup.\033[0m"
+    sudo pacman -S --noconfirm pacman-contrib || echo -e "\033[1;33mCould not install pacman-contrib, skipping cache cleanup.\033[0m"
 fi
 if command -v paccache &> /dev/null; then
     sudo paccache -rk"$KEEP_PACCACHE"
@@ -185,14 +188,19 @@ else
     echo -e "\033[1;33mpaccache is still unavailable; skipping cache prune.\033[0m"
 fi
 
-# Remove Orphans (unneeded dependencies)
-mapfile -t orphans < <(pacman -Qdtq 2>/dev/null || true)
-if [[ ${#orphans[@]} -gt 0 && -n "${orphans[0]}" ]]; then
-    echo -e "\033[1;34mRemoving orphan packages:\033[0m"
-    printf '%s\n' "${orphans[@]}"
-    sudo pacman -Rns --noconfirm "${orphans[@]}" || echo -e "\033[1;33mFailed to remove some orphans (continuing).\033[0m"
+# Remove Orphans (unneeded dependencies) — only if pacman upgrade succeeded
+orphans=()
+if (( pacman_ok == 1 )); then
+    mapfile -t orphans < <(pacman -Qdtq 2>/dev/null || true)
+    if [[ ${#orphans[@]} -gt 0 && -n "${orphans[0]}" ]]; then
+        echo -e "\033[1;34mRemoving orphan packages:\033[0m"
+        printf '%s\n' "${orphans[@]}"
+        sudo pacman -Rns --noconfirm "${orphans[@]}" || echo -e "\033[1;33mFailed to remove some orphans (continuing).\033[0m"
+    else
+        echo -e "\033[1;32mNo orphan packages found.\033[0m"
+    fi
 else
-    echo -e "\033[1;32mNo orphan packages found.\033[0m"
+    echo -e "\033[1;33mSkipping orphan removal because pacman upgrade returned non-zero.\033[0m"
 fi
 
 # Update AUR packages
