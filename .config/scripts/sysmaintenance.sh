@@ -300,8 +300,18 @@ elif (( AUTO_YES == 0 )) && [[ -t 0 ]]; then
     fi
 fi
 
-# Reboot is skipped by default to avoid unexpected restarts
+# Prompt for reboot (unless suppressed by --no-reboot)
 reboot_wanted=0
+if (( NO_REBOOT == 1 )); then
+    echo -e "\033[1;33mReboot suppressed by option (--no-reboot).\033[0m"
+elif (( AUTO_YES == 1 )); then
+    reboot_wanted=1
+elif [[ -t 0 ]]; then
+    read -r -p $'\n\033[1;34mWould you like to reboot now? [y/N] \033[0m' reboot_resp
+    if [[ "$reboot_resp" =~ ^[Yy]$ ]]; then
+        reboot_wanted=1
+    fi
+fi
 
 # --- Summary ---
 echo -e "\n\033[1;36m--- Maintenance Summary ---\033[0m"
