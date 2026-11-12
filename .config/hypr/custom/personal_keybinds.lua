@@ -24,6 +24,9 @@ hl.bind("ALT + RETURN", hl.dsp.window.fullscreen({ mode = "maximized", action = 
 -- Cycle occupied workspaces
 hl.bind("ALT + Tab", hl.dsp.exec_cmd("$HOME/.config/hypr/scripts/cycle-workspaces.sh"), { description = "Workspace: Cycle occupied workspaces" })
 
+-- Switch to next empty workspace
+hl.bind("SUPER + D", hl.dsp.focus({ workspace = "empty" }), { description = "Workspace: Next empty workspace" })
+
 -- -----------------------------------------------------------------------------
 -- Shell Utilities & Quick Toggles
 -- -----------------------------------------------------------------------------
