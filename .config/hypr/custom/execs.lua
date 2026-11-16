@@ -4,5 +4,6 @@
 -- multiple clipboard watchers, etc.).
 hl.on("hyprland.start", function()
     hl.exec_cmd("[workspace 1] kitty")
-    hl.exec_cmd("[workspace 2 silent] zen-browser")
+    hl.exec_cmd("[workspace 2 silent] sleep 5 && zen-browser")
+    hl.exec_cmd("sleep 6 && hyprvoice serve")
 end)
